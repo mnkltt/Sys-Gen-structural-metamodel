@@ -1,0 +1,287 @@
+abstract class Definition{
+    contains Usage[] features
+}
+
+abstract class Usage{
+    Definition[1..*] definition
+    Usage[] subsets
+    Usage[0..1] redefines
+}
+
+abstract class Classifier{
+    Definition[] specializes
+}
+
+abstract class Class extends Classifier{}
+
+abstract class DataType extends Classifier{}
+
+error invalidClassifier(Classifier a) <->
+    specializations(a,b),
+    Class(a),
+    DataType(b)
+;
+    specializations(a,b),
+    Class(b),
+    DataType(a).
+
+propagation rule notSpecialization(a, b) <->
+    Class(a), DataType(b)
+;
+    DataType(a), Class(b)
+==>
+    !specializations(a, b).
+
+class ItemDefinition extends Definition, Class{}
+
+class PartDefinition extends ItemDefinition{}
+
+class ItemUsage extends Usage{
+    ItemDefinition [0..*] itemDefinition
+}
+
+class PartUsage extends ItemUsage{
+    PartDefinition [0..*] partDefinition
+}
+
+class AttributeDefinition extends Definition, DataType{}
+
+class AttributeUsage extends Usage{
+    AttributeDefinition [0..*] attributeDefinition
+}
+
+%AttributeDefinition(Integer).
+
+error attributeDefinitionRedefinesDefinition(AttributeUsage u, Definition d) <->
+    definition(u, d),
+    !attributeDefinition(u, d);
+
+    !definition(u, d),
+    attributeDefinition(u, d).
+
+propagation rule definitionIsAttributeDefinition(AttributeUsage u, d) <->
+    definition(u, d),
+    !attributeDefinitionRedefinesDefinition(u, d)
+==>
+    attributeDefinition(u, d).
+
+propagation rule definitionIsNotAttributeDefinition(u, d) <->
+    !definition(u, d),
+    !attributeDefinitionRedefinesDefinition(u, d)
+==>
+    !attributeDefinition(u, d).
+
+propagation rule attributeDefinitionIsDefinition(u, d) <->
+    attributeDefinition(u, d),
+    !attributeDefinitionRedefinesDefinition(u, d)
+==>
+    definition(u, d).
+
+propagation rule attributeDefinitionIsNotDefinition(AttributeUsage u, d) <->
+    !attributeDefinition(u, d),
+    !attributeDefinitionRedefinesDefinition(u, d)
+==>
+    !definition(u, d).
+
+error deriveItemUsageItemDefinition(ItemUsage u, Definition d) <->
+    definition(u, d),
+    !itemDefinition(u, d);
+
+    !definition(u, d),
+    itemDefinition(u, d).
+
+propagation rule definitionIsItemDefinition(ItemUsage u, d) <->
+    definition(u, d),
+    !deriveItemUsageItemDefinition(u, d)
+==>
+    itemDefinition(u, d).
+
+propagation rule definitionIsNotItemDefinition(u, d) <->
+    !definition(u, d),
+    !deriveItemUsageItemDefinition(u, d)
+==>
+    !itemDefinition(u, d).
+
+propagation rule itemDefinitionIsDefinition(u, d) <->
+    itemDefinition(u, d),
+    !deriveItemUsageItemDefinition(u, d)
+==>
+    definition(u, d).
+
+propagation rule itemDefinitionIsNotDefinition(ItemUsage u, d) <->
+    !itemDefinition(u, d),
+    !deriveItemUsageItemDefinition(u, d)
+==>
+    !definition(u, d).
+
+pred derivePartUsagePartDefinition(PartUsage u, Definition d) <->
+    definition(u, d),
+    !partDefinition(u, d);
+
+    !definition(u, d),
+    partDefinition(u, d).
+
+default !derivePartUsagePartDefinition(*, *).
+
+propagation rule definitionIsPartDefinition(PartUsage u, d) <->
+    definition(u, d),
+    !derivePartUsagePartDefinition(u, d)
+==>
+    partDefinition(u, d).
+
+propagation rule definitionIsNotPartDefinition(u, d) <->
+    !definition(u, d),
+    !derivePartUsagePartDefinition(u, d)
+==>
+    !partDefinition(u, d).
+
+propagation rule partDefinitionIsDefinition(u, d) <->
+    partDefinition(u, d),
+    !derivePartUsagePartDefinition(u, d)
+==>
+    definition(u, d).
+
+propagation rule partDefinitionIsNotDefinition(PartUsage u, d) <->
+    !partDefinition(u, d),
+    !derivePartUsagePartDefinition(u, d)
+==>
+    !definition(u, d).
+
+pred validatePartUsagePartDefinition(PartUsage u) <->
+    !partDefinition(u, _).
+
+propagation rule notValidatePartUsagePartDefinition(PartUsage u, d) <->
+    validatePartUsagePartDefinition(u)
+==>
+    !partDefinition(u, d).
+
+default !validatePartUsagePartDefinition(*).
+
+%validatePartUsagePartDefinition(violatingPartUsage).
+%!definition(violatingPartUsage, PartDefinition).
+% If we comment the line below, the problem is unsatisfiable:
+%?derivePartUsagePartDefinition(violatingPartUsage, *).
+
+error invalidAttributeFeature(AttributeDefinition a) <->
+    !AttributeUsage(f),
+    features(a,f).
+
+propagation rule attributeFeatureIsAttribute(f) <->
+    !invalidAttributeFeature(a),
+    AttributeDefinition(a),
+    features(a, f)
+==>
+    AttributeUsage(f).
+
+pred sameTypeUsage(Usage u) <->
+    Definition(d),
+    features(d, u),
+    definition(u, d).
+
+propagation rule cannotDefine(Definition d, Usage u) <->
+    !sameTypeUsage(u),
+    features(d, u)
+==>
+    !definition(u, d).
+
+propagation rule mustDefine(Definition d, Usage u) <->
+    sameTypeUsage(u),
+    features(d, u)
+==>
+    definition(u, d).
+
+default !sameTypeUsage(*).
+
+pred notConnected(node a, node b) <->
+    !neighbour+(a,b),
+    a != b.
+
+!notConnected(*,*).
+
+pred neighbour(node a, node b) <->
+    features(a,b);
+    features(b,a);
+    definition(a,b);
+    definition(b,a);
+    specializes(a,b);
+    specializes(b,a);
+    subsets(a,b);
+    subsets(b,a);
+    redefines(a,b);
+    redefines(b,a).
+
+pred specializations(a, b) <->
+    specializes(a,b);
+    subsets(a,b);
+    redefines(a,b).
+
+propagation rule specializationsNotSpecializes(a, b) <->
+    !specializations(a, b)
+==>
+    !specializes(a, b),
+    !subsets(a, b),
+    !redefines(a, b).
+
+pred conforms(a, b) <->
+    equals(a,b);
+    specializations+(a,b).
+
+pred specializationLoop(a) <->
+    specializations+(a,a).
+
+default !specializationLoop(*).
+
+propagation rule notSpecializationLoop(a) <->
+    !specializationLoop(a)
+==>
+    !specializations(a, a).
+
+pred subsetOrRedefinition(a, b) <->
+    subsets(a,b);
+    redefines(a,b).
+
+propagation rule subsetOrRedefinitionNotSpecializes(a, b) <->
+    !subsetOrRedefinition(a, b)
+==>
+    !subsets(a, b),
+    !redefines(a, b).
+
+pred validSubsets(a, b) <->
+    Definition(d2),
+    Definition(d3),
+    features(d2,a),
+    features(d3,b),
+    conforms(d2,d3),
+    subsetOrRedefinition(a,b).
+
+pred validSubsetsType(a, b) <->
+    Definition(d1),
+    Definition(d2),
+    definition(a,d1),
+    definition(b,d2),
+    subsetOrRedefinition(a,b),
+    conforms(d1,d2).
+
+error invalidSubsets(a, b) <->
+    subsetOrRedefinition(a,b),
+    !validSubsets(a,b),
+    !validSubsetsType(a,b).
+
+propagation rule notSubsetOrRedefinition(a, b) <->
+    !validSubsets(a,b),
+    !validSubsetsType(a,b)
+==>
+    !subsetOrRedefinition(a, b).
+
+error invalidRedefines(a, b) <->
+    Definition(d),
+    features(d, a),
+    features(d, b),
+    redefines(a,b).
+
+propagation rule notInvalidRedefines(a, b) <->
+    Definition(d),
+    features(d, a),
+    features(d, b)
+==>
+    !redefines(a, b).

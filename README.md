@@ -2,7 +2,7 @@
 
 ## Available metamodels
 
-In this repository, you can find the structural metamodel in Refinery's partial modeling language.
+In this repository, you can find the [structural metamodel](https://github.com/mnkltt/Sys-Gen-structural-metamodel/blob/main/structural_metamodel) in Refinery's partial modeling language.
 
 Currently, you can try out this metamodel in Refinery below. It may display errors due to a version upgrade within Refinery. If you modify it in a way that affects its complexity, the online editor may time out.
 

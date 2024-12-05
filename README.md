@@ -1,4 +1,4 @@
-# Sys-Gen-structural-metamodel
+# Sys-Gen structural metamodel
 
 ## Available metamodels
 

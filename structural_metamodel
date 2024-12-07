@@ -158,7 +158,6 @@ propagation rule notValidatePartUsagePartDefinition(PartUsage u, d) <->
 default !validatePartUsagePartDefinition(*).
 
 %validatePartUsagePartDefinition(violatingPartUsage).
-%!definition(violatingPartUsage, PartDefinition).
 % If we comment the line below, the problem is unsatisfiable:
 %?derivePartUsagePartDefinition(violatingPartUsage, *).
 
